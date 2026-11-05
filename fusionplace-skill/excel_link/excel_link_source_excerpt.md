@@ -1,19 +1,21 @@
-' =============================================================================
-' fusion_place Excel-Link  名前定義 関連ソース抜粋
-' =============================================================================
-' 本ファイルは、Excel-Link がシート設定をローカル「名前」へ保存・復元する
-' 処理に直接関係する 4 モジュールを抜粋したものです。
-' （Loader / Saver / PERSISTENCE / KeyAssignment）
-'
-' 添付の名前定義リファレンス（excel_link/excel_link_named_ranges.md）の一次的な根拠として、
-' またAIがExcel-Linkシートを生成・解読する際の参照用として提供します。
-'
-' 注意:
-'  - これは Excel-Link 全体のごく一部であり、サーバ通信・認証等は含みません。
-'  - 記述内容は将来変更される可能性があり、互換性は保証されません。
-'  - フュージョンズが保証する安定仕様ではありません。
-' =============================================================================
+# fusion_place Excel-Link  名前定義 関連ソース抜粋
 
+本ファイルは、Excel-Link がシート設定をローカル「名前」へ保存・復元する
+処理に直接関係する 4 モジュールを抜粋したものです。
+（Loader / Saver / PERSISTENCE / KeyAssignment）
+
+添付の名前定義リファレンス（excel_link/excel_link_named_ranges.md）の一次的な根拠として、
+またAIがExcel-Linkシートを生成・解読する際の参照用として提供します。
+
+## 注意
+
+- これは Excel-Link 全体のごく一部であり、サーバ通信・認証等は含みません。
+- 記述内容は将来変更される可能性があり、互換性は保証されません。
+- フュージョンズが保証する安定仕様ではありません。
+
+## ソースコード (VBA)
+
+```vba
 ' ===========================================================================
 ' Module: PERSISTENCE (標準モジュール)
 ' ===========================================================================
@@ -130,7 +132,7 @@ Function UnprotectSheet(Sheet As Worksheet) As Boolean
         Sheet.Unprotect Password:=LoadPassword(Sheet)
     End If
     Exit Function
-    
+
 ERR_HANDLER:
     RaiseErr ERROR_SHEET_UNPROTECTABLE, Sheet.name
 End Function
@@ -138,7 +140,7 @@ End Function
 
 Sub SavePassword(Sheet As Worksheet, Password As String)
     Dim Encoded As String
-    
+
     TryUnprotectSheet Sheet:=Sheet, Password:=LoadPassword(Sheet)
     RemoveSheetAttributeIfExists Sheet, LABEL_PASSWORD
     If Password <> "" Then
@@ -151,7 +153,7 @@ End Sub
 Private Sub TryUnprotectSheet(Sheet As Worksheet, Password As String)
     On Error GoTo ERR_TRAP
     Sheet.Unprotect Password:=Password
-    
+
     Exit Sub
 
 ERR_TRAP:
@@ -175,10 +177,10 @@ End Sub
 
 Sub SaveString(Sheet As Worksheet, EntryName As String, aString As String)
     Dim SavedString     As String
-    
+
     If IsNull(aString) Or aString = "" Then Exit Sub
     SavedString = "=""" & Replace(aString, """", """""") & """"
-    
+
     Sheet.Names.add name:=EntryName, RefersTo:=SavedString, Visible:=NAME_VISIBILITY, NameLocal:=True
 End Sub
 
@@ -198,7 +200,7 @@ Private Function LoadSheetAttribute(Sheet As Worksheet, AttributeLabel As String
     Dim name                As name
     Dim WorkingSheet        As Worksheet
     Dim WorkingCell         As Range
-    
+
     Set name = GetSheetAttributeName(Sheet, AttributeLabel)
     If name Is Nothing Then
         LoadSheetAttribute = ""
@@ -212,9 +214,9 @@ Private Function GetSheetAttributeName(Sheet As Worksheet, AttributeLabel As Str
     Dim name                As name
     Dim SheetName           As String
     Dim DelimitedName       As DelimitedNameType
-    
+
     SheetName = ToInternalSheetName(Sheet.name)
-    
+
     Set GetSheetAttributeName = Nothing
     For Each name In Sheet.Names
         DelimitedName = Delimit(name.name)
@@ -225,7 +227,7 @@ Private Function GetSheetAttributeName(Sheet As Worksheet, AttributeLabel As Str
             End If
         End If
     Next
-    
+
 End Function
 
 Function ToInternalSheetName(SheetName As String) As String
@@ -235,7 +237,7 @@ End Function
 Function Delimit(name As String) As DelimitedNameType
     Dim Position        As Long
     Dim Rest            As String
-    
+
     Position = InStr(name, "!")
     If Position > 0 Then
         Delimit.SheetName = Left(name, Position - 1)
@@ -256,7 +258,7 @@ Function Delimit(name As String) As DelimitedNameType
         End If
     End If
     Delimit.Words = Split(Rest, "_")
-    
+
 End Function
 
 
@@ -280,15 +282,15 @@ Function IsFpName(DelimitedName As DelimitedNameType, SheetName As String) As Bo
         Exit Function
     End If
     IsFpName = True
-    
+
 End Function
 
 
 Private Sub RemoveSheetAttributeIfExists(Sheet As Worksheet, AttributeLabel As String)
     Dim name                As name
     Dim DelimitedName       As DelimitedNameType
-    
-    
+
+
     For Each name In Sheet.Names
         DelimitedName = Delimit(name.name)
         If IsFpName(DelimitedName, Sheet.name) Then
@@ -300,35 +302,35 @@ Private Sub RemoveSheetAttributeIfExists(Sheet As Worksheet, AttributeLabel As S
             End If
         End If
     Next
-    
+
 End Sub
 
 Function LoadSheetAttributeCell(Sheet As Worksheet, AttributeLabel As String) As Range
     Dim name                As name
     Dim Column              As Range
     Dim Row                 As Range
-    
+
     Set LoadSheetAttributeCell = Nothing
     Set name = GetSheetAttributeName(Sheet, AttributeLabel)
     If Not (name Is Nothing) Then
         Set LoadSheetAttributeCell = GetAnchoringCell(GetRefersToRangeSafely(name))
         Exit Function
     End If
-    
+
     Set name = GetSheetAttributeName(Sheet, AttributeLabel & "COL")
     If name Is Nothing Then Exit Function
 
     Set Column = GetRefersToRangeSafely(name)
     If Column Is Nothing Then Exit Function
-    
+
     Set name = GetSheetAttributeName(Sheet, AttributeLabel & "ROW")
     If name Is Nothing Then Exit Function
-    
+
     Set Row = GetRefersToRangeSafely(name)
     If Row Is Nothing Then Exit Function
-    
+
     Set LoadSheetAttributeCell = Intersect(Column, Row)
-        
+
 End Function
 
 Private Sub SaveSheetAttributeCell(Sheet As Worksheet, AttributeLabel As String, aCell As Range)
@@ -371,7 +373,7 @@ End Sub
 
 
 Private Sub IVisitor_ExitSheetDefs(SheetDefs As SheetDefs)
-    
+
 End Sub
 
 Private Sub IVisitor_EnterSheetDef(SheetDef As SheetDef)
@@ -379,21 +381,21 @@ Private Sub IVisitor_EnterSheetDef(SheetDef As SheetDef)
     Dim Type1               As String
     Dim SheetName           As String
     Dim DelimitedName       As DelimitedNameType
-    
+
     Set MySheetDef = SheetDef
     Set Sheet = SheetDef.Worksheet
     Set Names = Sheet.Names
     SheetName = PERSISTENCE.ToInternalSheetName(SheetDef.Worksheet.name)
-    
+
     For Each name In Names
         DelimitedName = PERSISTENCE.Delimit(name.name)
         If PERSISTENCE.IsFpName(DelimitedName, SheetName) Then
             name.Delete
         End If
     Next
-    
+
     SheetPrefix = PERSISTENCE.ModifiedPrefix(Sheet)
-    
+
     If VarType(SheetDef.Password) = vbString Then
         SaveValue Sheet, SheetPrefix & LABEL_PASSWORD, SheetDef.Password
     End If
@@ -402,38 +404,38 @@ Private Sub IVisitor_EnterSheetDef(SheetDef As SheetDef)
     SaveCell Sheet, SheetPrefix & LABEL_MAX_REFLECTION_COUNT_RANGE, SheetDef.MaxReflectionCountCell
     SaveRange Sheet, SheetPrefix & LABEL_REFLECTION_CHECK_RANGE, SheetDef.ReflectionCheckRange
     SaveValue Sheet, SheetPrefix & LABEL_VALIDATION_ENABLED, SheetDef.IsValidationEnabled
-    
-    
+
+
     RangeSeq = 0
     RowBindingSeq = 0
-    
+
     KeyIterationPrefix = SheetPrefix & LABEL_KEYITR & "_"
-    
+
     SaveCell Sheet, KeyIterationPrefix & LABEL_APP_LABEL_RANGE, SheetDef.ApplicationLabelRange
-    
+
     SaveRange Sheet, KeyIterationPrefix & LABEL_TEMPLATE_RANGE, SheetDef.TemplateRange
-    
+
     SaveCell Sheet, KeyIterationPrefix & LABEL_SEQ_CELL, SheetDef.SequenceCell
     SaveCell Sheet, KeyIterationPrefix & LABEL_FILTERING_CELL, SheetDef.FilteringCell
-    
+
     SaveCell Sheet, KeyIterationPrefix & LABEL_SHOW_ALL_COMBIBATIONS_CELL, SheetDef.ShowAllCombinationsCell
-  
+
     SaveValue Sheet, KeyIterationPrefix & LABEL_IS_FORMULA_TO_PASTE, SheetDef.IsFormulaToPaste
     SaveValue Sheet, KeyIterationPrefix & LABEL_IS_FORMAT_TO_PASTE, SheetDef.IsFormatToPaste
     SaveValue Sheet, KeyIterationPrefix & LABEL_IS_DATA_VALIDATION_TO_PASTE, SheetDef.IsDataValidationToPaste
     SaveValue Sheet, KeyIterationPrefix & LABEL_ENABLE_SWITCH_LOCK, SheetDef.EnableSwitchLock
     SaveValue Sheet, KeyIterationPrefix & LABEL_AUTOFILTER, SheetDef.AutoFilter
-    
+
     SaveRange Sheet, KeyIterationPrefix & LABEL_RESULT_AREA_PREV_ROW, SheetDef.ResultAreaPrevRow
-    
+
     SaveValue Sheet, KeyIterationPrefix & LABEL_TEMPLATE_PROCESSING_SUPPRESSED, SheetDef.IsTemplateProcessingSuppressed
-    
+
 End Sub
 
 
 Private Sub IVisitor_EnterRowBinding(RowBinding As RowBinding)
     Dim Prefix              As String
-    
+
     RowBindingSeq = RowBindingSeq + 1
     Prefix = KeyIterationPrefix & LABEL_RB & "_" & Format(RowBindingSeq, "000") & "_"
     SaveString Sheet, Prefix & LABEL_RB_DIM, RowBinding.DimensionLabel
@@ -455,26 +457,26 @@ End Sub
 Private Sub IVisitor_EnterRegionDef(RegionDef As RegionDef)
     Dim HexExpressions  As Variant
     Dim Seq             As Integer
-    
+
     SetDimensions RegionDef.ApplicationLabel
-    
+
     RangeSeq = RangeSeq + 1
-    
+
     RangePrefix = PERSISTENCE.RangePrefix(RegionDef, RangeSeq)
-    
+
     SaveValue Sheet, RangePrefix & LABEL_REGION_NAME, RegionDef.RegionName
-    
+
     SaveRange Sheet, RangePrefix & LABEL_RANGE, RegionDef.Range
     SaveCell Sheet, RangePrefix & LABEL_APP_LABEL_RANGE, RegionDef.ApplicationLabelRange
     SaveCell Sheet, RangePrefix & LABEL_PARTICIPANT_LABEL_RANGE, RegionDef.ParticipantLabelRange
     SaveCell Sheet, RangePrefix & LABEL_EDITION_KEY_RANGE, RegionDef.EditionKeyRange
-    
+
     SaveValue Sheet, RangePrefix & LABEL_REGION_TYPE, RegionDef.RegionType
-    
+
     SaveCell Sheet, RangePrefix & LABEL_UNIT_RANGE, RegionDef.UnitRange
-    
+
     SaveString Sheet, RangePrefix & LABEL_LEDGER_LABEL, RegionDef.LedgerLabel
-    
+
     SaveValue Sheet, RangePrefix & LABEL_APPLICABLE_ACTION, RegionDef.ApplicableAction
     SaveValue Sheet, RangePrefix & LABEL_ROUNDING, RegionDef.Rounding
     SaveValue Sheet, RangePrefix & LABEL_IGNORED_IN_DATA_EXISTENCE_JDGMNT, RegionDef.IsIgnoredInDataExistenceJudgment
@@ -485,11 +487,11 @@ Private Sub IVisitor_EnterRegionDef(RegionDef As RegionDef)
     SaveValue Sheet, RangePrefix & LABEL_SIGN, RegionDef.Sign
     SaveValue Sheet, RangePrefix & LABEL_DECIMAL_PLACES, RegionDef.DecimalPlaces
     SaveValue Sheet, RangePrefix & LABEL_SWITCH_CELL_LOCKING, RegionDef.SwitchCellLocking
-    
+
     SaveCell Sheet, RangePrefix & LABEL_LOCKED_COLOR_RANGE, RegionDef.LockedColorRange
-    
+
     SaveString Sheet, RangePrefix & LABEL_DIMENSION, RegionDef.DimensionLabel
-    
+
     HexExpressions = STRING_UTIL.Divide(STRING_UTIL.ToUTF16LEHexString(RegionDef.TextExpression), 240)
     If Not IsNull(HexExpressions) Then
         For Seq = LBound(HexExpressions) To UBound(HexExpressions)
@@ -497,7 +499,7 @@ Private Sub IVisitor_EnterRegionDef(RegionDef As RegionDef)
             SaveString Sheet, RangePrefix & LABEL_TEXT_FORMULA & "_" & PERSISTENCE.ToSeqString(Seq + 1), CStr(HexExpressions(Seq))
         Next
     End If
-    
+
     KeyAssignmentSeq = 0
 End Sub
 
@@ -507,7 +509,7 @@ Private Sub SetDimensions(ApplicationLabel As String)
     PrevApplicationLabel = ApplicationLabel
     Set Dimensions = server.GetDimensions(PrevApplicationLabel)
     Exit Sub
-    
+
 ERROR_TRAP:
     Set Dimensions = Nothing
 End Sub
@@ -520,7 +522,7 @@ End Sub
 
 
 Private Sub IVisitor_EnterKeyAssignment(KeyAssignment As KeyAssignment)
-    
+
     If KeyAssignment.Range Is Nothing Then Exit Sub
     If Not (Dimensions Is Nothing) Then
         If FindByLabel(KeyAssignment.DimensionLabel, Dimensions) Is Nothing Then
@@ -529,14 +531,14 @@ Private Sub IVisitor_EnterKeyAssignment(KeyAssignment As KeyAssignment)
     End If
     KeyAssignmentSeq = KeyAssignmentSeq + 1
     KeyAssignmentPrefix = PERSISTENCE.KeyAssignmentPrefix(RangePrefix, KeyAssignmentSeq)
-    
+
     SaveString Sheet, KeyAssignmentPrefix & LABEL_KEY_DIM, KeyAssignment.DimensionLabel
     SaveRange Sheet, KeyAssignmentPrefix & LABEL_KEY_RANGE, KeyAssignment.Range
 
 End Sub
 
 Private Sub IVisitor_ExitKeyAssignment(KeyAssignment As KeyAssignment)
-    
+
 End Sub
 
 
@@ -568,16 +570,16 @@ Public Sub Load(SheetDef As SheetDef)
     Dim HexExpressionPartCol    As Collection
     Dim RegionSeq               As String
     Dim HexExpression           As String
-    
+
     UiSuppressor.Begin
-    
+
     On Error GoTo WRAP_UP
-    
+
     Set MySheetDef = SheetDef
-    
+
     SheetName = PERSISTENCE.ToInternalSheetName(SheetDef.Worksheet.name)
     Set Names = SheetDef.Worksheet.Names
-    
+
     For Each name In Names
         DelimitedName = PERSISTENCE.Delimit(name.name)
         If PERSISTENCE.IsFpName(DelimitedName, SheetName) Then
@@ -591,11 +593,11 @@ Public Sub Load(SheetDef As SheetDef)
             End If
         End If
     Next
-    
+
     If MySheetDef.IsTemplateProcessingSheet = False And MySheetDef.IsTemplateProcessingSuppressed = False Then
         MySheetDef.EnableSwitchLock = True
     End If
-    
+
     For i = 1 To RegionDefsBySeq.Count
         RegionSeq = PERSISTENCE.ToSeqString(i)
         Set RegionDef = RegionDefsBySeq(RegionSeq)
@@ -608,16 +610,16 @@ Public Sub Load(SheetDef As SheetDef)
             RegionDef.TextExpression = STRING_UTIL.FromUTF16LEHexString(HexExpression)
         End If
     Next
-    
+
     For Each RegionDef In RegionDefsBySeq
         RegionDef.RemoveInvalidKeyAssignments
         RegionDef.ClearInvalidCells
     Next
     MySheetDef.ClearInvalidCells
-    
+
     Set SheetDef.ReflectionPostProcessSpecSheet = GetSheet(SheetDef.Worksheet.Parent, SheetDef.Worksheet.name & "_FPCTL1")
-    
-    
+
+
 WRAP_UP:
     UiSuppressor.Restore
     Set MySheetDef = Nothing
@@ -628,10 +630,10 @@ End Sub
 
 Private Function GetSheet(Book As Workbook, SheetName As String) As Worksheet
     On Error GoTo ERR_HANDLER
-    
+
     Set GetSheet = Book.Worksheets(SheetName)
     Exit Function
-    
+
 ERR_HANDLER:
     Set GetSheet = Nothing
 End Function
@@ -639,9 +641,9 @@ End Function
 
 Private Sub ProcessSheetAttributes(name As name, DelimitedName As DelimitedNameType)
     Dim Type1               As String
-            
+
     Type1 = DelimitedName.Words(1)
-    
+
     If Type1 = LABEL_PASSWORD Then
         MySheetDef.Password = name.value
     ElseIf Type1 = LABEL_RETRIEVAL_DATE_TIME_RANGE Then
@@ -667,29 +669,29 @@ Private Sub ProcessKeyIteartionDef(name As name, DelimitedName As DelimitedNameT
     Dim Type4               As String
     Dim RowBinding          As RowBinding
     Dim RowBindingSeq       As String
-    
+
     Type2 = DelimitedName.Words(2)
 
     If Type2 = LABEL_APP_LABEL_RANGE Then
         Set MySheetDef.ApplicationLabelRange = GetAnchoringCell(GetRefersToRangeSafely(name))
     ElseIf BeginsWith(Type2, LABEL_APP_LABEL_RANGE) Then
         Set MySheetDef.ApplicationLabelRange = Confine(MySheetDef.ApplicationLabelRange, GetRefersToRangeSafely(name))
-    
+
     ElseIf Type2 = LABEL_TEMPLATE_RANGE Then
         Set MySheetDef.TemplateRange = GetRefersToRangeSafely(name)
-        
+
     ElseIf BeginsWith(Type2, LABEL_SEQ_CELL) Then
         Set MySheetDef.SequenceCell = Confine(MySheetDef.SequenceCell, GetRefersToRangeSafely(name))
-    
+
     ElseIf BeginsWith(Type2, LABEL_FILTERING_CELL) Then
         Set MySheetDef.FilteringCell = Confine(MySheetDef.FilteringCell, GetRefersToRangeSafely(name))
-        
+
     ElseIf BeginsWith(Type2, LABEL_SHOW_ALL_COMBIBATIONS_CELL) Then
         Set MySheetDef.ShowAllCombinationsCell = Confine(MySheetDef.ShowAllCombinationsCell, GetRefersToRangeSafely(name))
-    
+
     ElseIf Type2 = LABEL_RESULT_AREA_PREV_ROW Then
         Set MySheetDef.ResultAreaPrevRow = GetRefersToRangeSafely(name)
-    
+
     ElseIf Type2 = LABEL_IS_FORMULA_TO_PASTE Then
         MySheetDef.IsFormulaToPaste = GetBooleanValue(name)
     ElseIf Type2 = LABEL_IS_FORMAT_TO_PASTE Then
@@ -700,7 +702,7 @@ Private Sub ProcessKeyIteartionDef(name As name, DelimitedName As DelimitedNameT
         MySheetDef.EnableSwitchLock = GetBooleanValue(name)
     ElseIf Type2 = LABEL_AUTOFILTER Then
         MySheetDef.AutoFilter = GetBooleanValue(name)
-   
+
     ElseIf Type2 = LABEL_TEMPLATE_PROCESSING_SUPPRESSED Then
         MySheetDef.IsTemplateProcessingSuppressed = GetBooleanValue(name)
     ElseIf Type2 = LABEL_RB Then
@@ -731,39 +733,39 @@ Private Sub ProcessRangeDef(name As name, DelimitedName As DelimitedNameType, Ra
     Dim Type2               As String
     Dim Type4               As String
     Dim SubSeq              As String
-    
+
     Set RegionDef = GetRegionDefBySeq(RangeSeq)
     Type2 = DelimitedName.Words(2)
     If Type2 = LABEL_REGION_NAME Then
         RegionDef.RegionName = GetStringValue(name)
     ElseIf Type2 = LABEL_RANGE Then
         Set RegionDef.Range = GetRefersToRangeSafely(name)
-    
+
     ElseIf Type2 = LABEL_APP_LABEL_RANGE Then
         Set RegionDef.ApplicationLabelRange = GetAnchoringCell(GetRefersToRangeSafely(name))
     ElseIf BeginsWith(Type2, LABEL_APP_LABEL_RANGE) Then
         Set RegionDef.ApplicationLabelRange = Confine(RegionDef.ApplicationLabelRange, GetRefersToRangeSafely(name))
-    
+
     ElseIf Type2 = LABEL_PARTICIPANT_LABEL_RANGE Then
         Set RegionDef.ParticipantLabelRange = GetAnchoringCell(GetRefersToRangeSafely(name))
     ElseIf BeginsWith(Type2, LABEL_PARTICIPANT_LABEL_RANGE) Then
         Set RegionDef.ParticipantLabelRange = Confine(RegionDef.ParticipantLabelRange, GetRefersToRangeSafely(name))
-    
+
     ElseIf Type2 = LABEL_EDITION_KEY_RANGE Then
         Set RegionDef.EditionKeyRange = GetAnchoringCell(GetRefersToRangeSafely(name))
     ElseIf BeginsWith(Type2, LABEL_EDITION_KEY_RANGE) Then
         Set RegionDef.EditionKeyRange = Confine(RegionDef.EditionKeyRange, GetRefersToRangeSafely(name))
-    
-  
+
+
     ElseIf Type2 = LABEL_REGION_TYPE Then
         RegionDef.RegionType = GetIntValue(name)
-    
+
     ElseIf Type2 = LABEL_UNIT_RANGE Then
         Set RegionDef.UnitRange = GetAnchoringCell(GetRefersToRangeSafely(name))
     ElseIf BeginsWith(Type2, LABEL_UNIT_RANGE) Then
         Set RegionDef.UnitRange = Confine(RegionDef.UnitRange, GetRefersToRangeSafely(name))
-    
-    
+
+
     ElseIf Type2 = LABEL_LEDGER_LABEL Then
         RegionDef.LedgerLabel = GetStringValue(name)
     ElseIf Type2 = LABEL_APPLICABLE_ACTION Then
@@ -786,12 +788,12 @@ Private Sub ProcessRangeDef(name As name, DelimitedName As DelimitedNameType, Ra
         RegionDef.DecimalPlaces = GetIntValue(name)
     ElseIf Type2 = LABEL_SWITCH_CELL_LOCKING Then
         RegionDef.SwitchCellLocking = GetBooleanValue(name)
-    
+
     ElseIf Type2 = LABEL_LOCKED_COLOR_RANGE Then
         Set RegionDef.LockedColorRange = GetAnchoringCell(GetRefersToRangeSafely(name))
     ElseIf BeginsWith(Type2, LABEL_LOCKED_COLOR_RANGE) Then
         Set RegionDef.LockedColorRange = Confine(RegionDef.LockedColorRange, GetRefersToRangeSafely(name))
-    
+
     ElseIf Type2 = LABEL_DIMENSION Then
         RegionDef.DimensionLabel = GetStringValue(name)
     ElseIf Type2 = LABEL_TEXT_FORMULA Then
@@ -818,7 +820,7 @@ Private Sub ProcessRangeDef(name As name, DelimitedName As DelimitedNameType, Ra
     Else
         MsgBoxEx "Undefined TYPE2 label [" & Type2 & "]"
     End If
-    
+
 End Sub
 
 
@@ -841,7 +843,7 @@ Private Function GetRegionDefBySeq(RangeSeq As String) As RegionDef
 ERR_TRAP:
     Set GetRegionDefBySeq = MySheetDef.AddRegionDef
     GetRegionDefBySeq.IsToConvertDateTimeText = True
-    
+
     RegionDefsBySeq.add Item:=GetRegionDefBySeq, key:=RangeSeq
 End Function
 
@@ -850,9 +852,9 @@ Private Function GetKeyAssignmentBySeq(RangeSeq As String, KeySeq As String) As 
     On Error GoTo ERR_TRAP
     key = RangeSeq & "_" & KeySeq
     Set GetKeyAssignmentBySeq = KeyAssignmentsBySeq.Item(key)
-    
+
     Exit Function
-    
+
 ERR_TRAP:
     Set GetKeyAssignmentBySeq = GetRegionDefBySeq(RangeSeq).AddKeyAssignment
     KeyAssignmentsBySeq.add Item:=GetKeyAssignmentBySeq, key:=key
@@ -861,9 +863,9 @@ End Function
 Private Function GetRowBindingBySeq(RowBindingSeq As String) As RowBinding
     On Error GoTo ERR_TRAP
     Set GetRowBindingBySeq = RowBindingsBySeq.Item(RowBindingSeq)
-    
+
     Exit Function
-    
+
 ERR_TRAP:
     Set GetRowBindingBySeq = MySheetDef.AddRowBinding
     RowBindingsBySeq.add Item:=GetRowBindingBySeq, key:=RowBindingSeq
@@ -898,7 +900,7 @@ End Property
 
 Public Property Set Range(Range As Range)
     Dim KeyType             As Integer
-    
+
     KeyType = GetKeyType(Range)
     Select Case KeyType
     Case KEY_TYPE_NOTHING
@@ -910,12 +912,12 @@ Public Property Set Range(Range As Range)
     Case KEY_TYPE_ROW
         Set MyRange = Range.Cells.Item(1, 1).EntireColumn
     End Select
-    
+
 End Property
 
 Private Function GetKeyType(aRange As Range) As Integer
     On Error GoTo ERR_HANDLER
-    
+
     Dim EntireRowSelected As Boolean
     If aRange Is Nothing Then
         GetKeyType = KEY_TYPE_NOTHING
@@ -950,18 +952,18 @@ End Property
 
 Private Property Get ColumnRowId_A1() As Variant
     Dim Address As String
-    
+
     Select Case KeyType
     Case KEY_TYPE_NOTHING
         ColumnRowId_A1 = "-"
-        
+
     Case KEY_TYPE_CELL
         ColumnRowId_A1 = MyRange.Address(ColumnAbsolute:=False, RowAbsolute:=False, ReferenceStyle:=xlA1)
-    
+
     Case KEY_TYPE_ROW
         Address = MyRange.Address(ColumnAbsolute:=False, RowAbsolute:=False, ReferenceStyle:=xlA1)
         ColumnRowId_A1 = Left(Address, InStr(Address, ":") - 1)
-    
+
     Case KEY_TYPE_COLUMN
         ColumnRowId_A1 = MyRange.Row
     End Select
@@ -970,17 +972,17 @@ End Property
 
 Private Property Get ColumnRowId_R1C1() As Variant
     Dim Address As String
-    
+
     Select Case KeyType
     Case KEY_TYPE_NOTHING
         ColumnRowId_R1C1 = "-"
-        
+
     Case KEY_TYPE_CELL
         ColumnRowId_R1C1 = MyRange.Address(ReferenceStyle:=xlR1C1)
-    
+
     Case KEY_TYPE_ROW
         ColumnRowId_R1C1 = MyRange.Column
-    
+
     Case KEY_TYPE_COLUMN
         ColumnRowId_R1C1 = MyRange.Row
     End Select
@@ -995,21 +997,21 @@ End Function
 
 Private Function GetColumnOrRowCaption(KeyType As Integer, Indent As Boolean) As String
     Dim Prefix   As String
-    
+
     Select Case KeyType
     Case KEY_TYPE_NOTHING
         GetColumnOrRowCaption = ""
-        
+
     Case KEY_TYPE_CELL
         GetColumnOrRowCaption = GetText("CAP_CELL") & " "
-    
+
     Case KEY_TYPE_ROW
         GetColumnOrRowCaption = IIf(Indent, vbTab, "") & GetText("CAP_COL") & " "
-    
+
     Case KEY_TYPE_COLUMN
         GetColumnOrRowCaption = IIf(Indent, vbTab & vbTab, "") & GetText("CAP_ROW") & " "
     End Select
-    
+
 End Function
 
 Public Sub Accept(Visitor As IVisitor)
@@ -1021,17 +1023,17 @@ End Sub
 '
 Function IsStableRowKey(RowBindings As Collection, TemplateRange) As Boolean
     IsStableRowKey = False
-    
+
     If Me.KeyType <> KEY_TYPE_ROW Then Exit Function
-    
+
     If TemplateRange Is Nothing Then
         IsStableRowKey = False
         Exit Function
     End If
-    
+
     '繰返し条件に束縛されたキー列ではない
     If IsBoundRowKey(RowBindings) Then Exit Function
-    
+
     'キー列がテンプレート範囲と重なっていないこと
     IsStableRowKey = (Intersect(Me.Range, TemplateRange) Is Nothing)
 End Function
@@ -1041,17 +1043,17 @@ End Function
 '
 Function IsVolatileRowKey(RowBindings As Collection, TemplateRange) As Boolean
     IsVolatileRowKey = False
-    
+
     If Me.KeyType <> KEY_TYPE_ROW Then Exit Function
-    
+
     If TemplateRange Is Nothing Then
         IsVolatileRowKey = True
         Exit Function
     End If
-    
+
     '繰返し条件に束縛されたキー列ではない
     If IsBoundRowKey(RowBindings) Then Exit Function
-    
+
     'キー列がテンプレート範囲と重なっていること
     IsVolatileRowKey = Not (Intersect(Me.Range, TemplateRange) Is Nothing)
 
@@ -1074,9 +1076,6 @@ Function IsBoundRowKey(RowBindings As Collection) As Boolean
         End If
     Next
     IsBoundRowKey = False
-    
+
 End Function
-
-
--------------------------------------------------------------------------------
-
+```
